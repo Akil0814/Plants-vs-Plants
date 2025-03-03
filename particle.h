@@ -3,6 +3,7 @@
 #include "util.h"
 #include "atlas.h"
 #include "vector2.h"
+#include<iostream>
 
 
 class Particle
@@ -46,6 +47,7 @@ public:
 			{
 				idx_frame = atlas->get_size() - 1;//检测到动画播完后
 				valid = false;
+				std::cout << "particle is invalid" <<std::endl;
 			}
 		}
 	}

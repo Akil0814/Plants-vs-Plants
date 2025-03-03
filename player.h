@@ -69,6 +69,23 @@ public:
 				particle_position.y = position.y + size.y - frame->getheight();
 				particle_list.emplace_back(particle_position, &atlas_run_effect, 150);
 			});
+
+		animation_jump_effect.set_atlas(&atlas_jump_effect);//跳跃特效动画
+		animation_jump_effect.set_interval(25);
+		animation_jump_effect.set_loop(false);
+		animation_jump_effect.set_callback([&]()
+			{
+				is_jump_effect_visible = false;
+			});
+
+		animation_land_effect.set_atlas(&atlas_land_effect);//落地特效动画
+		animation_land_effect.set_interval(50);
+		animation_land_effect.set_loop(false);
+		animation_land_effect.set_callback([&]()
+			{
+				is_land_effect_visible = false;
+			});
+
 	}
 	~Player() = default;
 
@@ -94,6 +111,8 @@ public:
 			current_animation = is_facing_right ? &animation_attack_ex_right : &animation_attack_ex_left;//决定播放对应方向的动画
 
 		current_animation->on_update(delta);//对当前播放的动画进行更新
+		animation_jump_effect.on_update(delta);//更新跳跃特效动画
+		animation_land_effect.on_update(delta);//更新落地特效动画
 
 		timer_attack_cd.on_update(delta);//更新定时器
 		timer_invulnerable.on_update(delta);
@@ -121,6 +140,11 @@ public:
 
 	virtual void on_draw(const Camera& camera)
 	{
+		if (is_jump_effect_visible)
+			animation_jump_effect.on_draw(camera, (int)position_jump_effect.x, (int)position_jump_effect.y);
+		if (is_land_effect_visible)
+			animation_land_effect.on_draw(camera, (int)position_land_effect.x, (int)position_land_effect.y);
+
 		for (const Particle& particle : particle_list)//粒子对象绘图方法
 			particle.on_draw(camera);
 
@@ -261,6 +285,22 @@ public:
 			return;//直接返回
 
 		velocity.y += jump_velocity;//修改玩家跳跃速度
+		is_jump_effect_visible = true;//设置跳跃特效可见
+		animation_jump_effect.reset();//重置跳跃特效动画
+
+		IMAGE* effect_frame = animation_jump_effect.get_frame();//获取跳跃特效动画播放位置
+		position_jump_effect.x = position.x + (size.x - effect_frame->getwidth()) / 2;
+		position_jump_effect.y = position.y + size.y - effect_frame->getheight();
+	}
+
+	virtual void on_land()//落地逻辑
+	{
+		is_land_effect_visible = true;//设置落地特效可见
+		animation_land_effect.reset();//重置落地特效动画
+
+		IMAGE* effect_frame = animation_land_effect.get_frame();//获取落地特效动画播放位置
+		position_land_effect.x = position.x + (size.x - effect_frame->getwidth()) / 2;
+		position_land_effect.y = position.y + size.y - effect_frame->getheight();
 	}
 
 	virtual void on_attack() {}
@@ -303,8 +343,10 @@ public:
 	}
 
 protected:
-	void move_and_collide(int delta)//
+	void move_and_collide(int delta)
 	{
+		float last_velocity_y = velocity.y;//上一帧玩家速度
+
 		velocity.y += gravity * delta;//根据重力加速度的值对玩家速度进行累加
 		position += velocity * (float)delta;//根据速度更新玩家位置
 
@@ -324,6 +366,9 @@ protected:
 					{
 						position.y = shape.y - size.y;//将玩家放置到平台上
 						velocity.y = 0;//将y轴速度归0
+
+						if (last_velocity_y != 0)//上一帧玩家速度不为0时
+							on_land();//调用落地逻辑	
 
 						break;
 					}
