@@ -26,7 +26,7 @@ extern IMAGE img_2P_cursor;
 class Player
 {
 public:
-	Player()
+	Player(bool facing_right=true):is_facing_right(facing_right)
 	{
 		current_animation = &animation_idle_right;//设置默认方向
 
@@ -86,6 +86,12 @@ public:
 				is_land_effect_visible = false;
 			});
 
+		timer_cursor_visibility.set_wait_time(2500);
+		timer_cursor_visibility.set_one_shot(true);
+		timer_cursor_visibility.set_callback([&]()
+			{
+				is_cursor_visible = false;
+			});
 	}
 	~Player() = default;
 
@@ -110,6 +116,9 @@ public:
 		if (is_attacking_ex)//根据角色特殊攻击状态
 			current_animation = is_facing_right ? &animation_attack_ex_right : &animation_attack_ex_left;//决定播放对应方向的动画
 
+		if (hp <= 0)//生命值归零时播放对应动画
+			current_animation = last_hurt_direction.x < 0 ? &animation_die_left : &animation_die_right;
+
 		current_animation->on_update(delta);//对当前播放的动画进行更新
 		animation_jump_effect.on_update(delta);//更新跳跃特效动画
 		animation_land_effect.on_update(delta);//更新落地特效动画
@@ -118,6 +127,7 @@ public:
 		timer_invulnerable.on_update(delta);
 		timer_invulnerable_blink.on_update(delta);
 		timer_run_effect_generation.on_update(delta);
+		timer_cursor_visibility.on_update(delta);
 
 		if (hp <= 0)//死亡时更新
 			timer_die_effect_generation.on_update(delta);
@@ -152,6 +162,21 @@ public:
 			putimage_alpha(camera, (int)position.x, (int)position.y, &img_sketch);
 		else
 			current_animation->on_draw(camera, (int)position.x, (int)position.y);
+
+		if (is_cursor_visible)
+		{
+			switch (id)
+			{
+			case PlayerID::P1:
+				putimage_alpha(camera, (int)(position.x + (size.x - img_1P_cursor.getwidth()) / 2),
+					(int)(position.y - img_1P_cursor.getheight()), &img_1P_cursor);
+				break;
+			case PlayerID::P2:
+				putimage_alpha(camera, (int)(position.x + (size.x - img_2P_cursor.getwidth()) / 2),
+					(int)(position.y - img_2P_cursor.getheight()), &img_2P_cursor);
+				break;
+			}
+		}
 
 		if (is_debug)//调试模式
 		{
@@ -332,6 +357,11 @@ public:
 		timer_invulnerable.restart();//重置定时器
 	}
 
+	void set_hp(int val)
+	{
+		hp = val;
+	}
+
 	int get_hp() const
 	{
 		return hp;
@@ -349,6 +379,9 @@ protected:
 
 		velocity.y += gravity * delta;//根据重力加速度的值对玩家速度进行累加
 		position += velocity * (float)delta;//根据速度更新玩家位置
+
+		if (hp <= 0)//防止角色被击飞后产生碰撞
+			return;
 
 		if (velocity.y > 0)//当y轴速度小于0时
 		{
@@ -389,12 +422,12 @@ protected:
 					bullet->on_collide();//调用对应子弹的碰撞代码
 					bullet->set_valid(false);//设置为已经发生碰撞
 					hp -= bullet->get_damage();//修改玩家生命值
-					/*last_hurt_direction = bullet->get_position() - position;
-					if (hp <= 0)
+					last_hurt_direction = bullet->get_position() - position;//根据受击方向和自动方向更新
+					if (hp <= 0)//当生命值归零时
 					{
-						velocity.x = last_hurt_direction.x < 0 ? 0.35f : -0.35f;
-						velocity.y = -1.0f;
-					}*/
+						velocity.x = last_hurt_direction.x < 0 ? 0.35f : -0.35f;//设置速度
+						velocity.y = -1.0f;//达到斜上抛运动的效果
+					}
 				}
 			}
 		}
@@ -423,6 +456,9 @@ protected: //子类无法获取 privet成员
 	Animation animation_attack_ex_right;            //特殊攻击动画
 	Animation animation_jump_effect;                //跳跃特效
 	Animation animation_land_effect;                //落地特效
+
+	Animation animation_die_left;					//朝左死亡动画
+	Animation animation_die_right;					//朝右死亡动画
 
 	bool is_jump_effect_visible = false;            //跳跃特效是否可见
 	bool is_land_effect_visible = false;            //落地特效是否可见
@@ -453,6 +489,11 @@ protected: //子类无法获取 privet成员
 
 	Timer timer_run_effect_generation;              //跑动功能粒子发射定时器
 	Timer timer_die_effect_generation;              //死亡特效粒子发射定时器
+
+	bool is_cursor_visible = true;					//玩家光标指示器是否显示
+	Timer timer_cursor_visibility;					//玩家光标指示器可见性定时器
+
+	Vector2 last_hurt_direction;					//最后一次受击的方向
 
 	std::vector<Particle> particle_list;            //粒子对象列表
 };

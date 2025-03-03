@@ -263,12 +263,12 @@ public:
 		switch (player_type_2)//根据玩家选择不同的角色类型
 		{
 		case PlayerType::Peashooter:
-			player_2 = new PeashooterPlayer();
+			player_2 = new PeashooterPlayer(false);
 			img_player_2_avatar = &img_avatar_peashooter;//设置玩家头像
 
 			break;
 		case PlayerType::Sunflower:
-			player_2 = new SunflowerPlayer();
+			player_2 = new SunflowerPlayer(false);
 			img_player_2_avatar = &img_avatar_sunflower;//设置玩家头像
 
 			break;

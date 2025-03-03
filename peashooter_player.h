@@ -8,13 +8,13 @@ extern Atlas atlas_peashooter_run_left;
 extern Atlas atlas_peashooter_run_right;
 extern Atlas atlas_peashooter_attack_ex_left;
 extern Atlas atlas_peashooter_attack_ex_right;
-
-
+extern Atlas atlas_peashooter_die_left;
+extern Atlas atlas_peashooter_die_right;
 
 class PeashooterPlayer:public Player
 {
 public:
-	PeashooterPlayer()
+	PeashooterPlayer(bool facing_right=true):Player(facing_right)
 	{
 		animation_idle_left.set_atlas(&atlas_peashooter_idle_left);//设置对应角色图集
 		animation_idle_right.set_atlas(&atlas_peashooter_idle_right);
@@ -22,6 +22,8 @@ public:
 		animation_run_right.set_atlas(&atlas_peashooter_run_right);
 		animation_attack_ex_left.set_atlas(&atlas_peashooter_attack_ex_left);
 		animation_attack_ex_right.set_atlas(&atlas_peashooter_attack_ex_right);
+		animation_die_left.set_atlas(&atlas_peashooter_die_left);
+		animation_die_right.set_atlas(&atlas_peashooter_die_right);
 
 		animation_idle_left.set_interval(75);//设置动画对象帧间隔
 		animation_idle_right.set_interval(75);
@@ -29,6 +31,11 @@ public:
 		animation_run_right.set_interval(75);
 		animation_attack_ex_left.set_interval(75);
 		animation_attack_ex_right.set_interval(75);
+		animation_die_left.set_interval(150);
+		animation_die_right.set_interval(150);
+
+		animation_die_left.set_loop(false);
+		animation_die_right.set_loop(false);
 
 		size.x = 96, size.y = 96;
 
